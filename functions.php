@@ -240,62 +240,40 @@
   }
   function get_all_news() {
     $my_posts = [];
-    $prefectures = get_terms('prefecture');
-    $prefecture_index = 0;
-    foreach ($prefectures as $prefecture) {
-        ++$prefecture_index;
-        $precture_order = get_term_meta($prefecture->term_id, 'prefecture_order', true);
-        $my_post = [
-            'order' => intval($precture_order)
-        ];
-        $my_post['id'] = $prefecture_index;
-        $my_post['prefecture'] = $prefecture->name;
-        $args = array(
-            'post_type' => 'shop_list',
-            'paged' => get_query_var('page'),
-            'order' => 'ASC',
-            'tax_query' => array(
-                array(
-                    'taxonomy' => 'prefecture',
-                    'field'    => 'slug',
-                    'terms'    => $prefecture->slug,
-                ),
-            ),
-            'posts_per_page' => -1,
-        );
-        $WP_post = new WP_Query($args);
-        $WP_post_json = json_encode($WP_post -> posts);
-        $i = 0;
-        if ($WP_post->have_posts()) {
-            while ($WP_post->have_posts()) {
-                $WP_post->the_post();
-                $post_data = [];
-                $post_id = get_the_ID();
-                $brand = get_the_terms($post_id, 'brand');
-                $item = get_the_terms($post_id, 'item');
-                $prefecture = get_the_terms($post_id, 'prefecture');
-                $post_data['post_id'] = get_the_ID();
-                $post_data['post_title'] = get_the_title();
-                $post_data['shop_name'] = get_field('shop_name');
-                $post_data['shop_adress'] = get_field('shop_adress');
-                $post_data['shop_tel'] = get_field('shop_tel');
-                $post_data['googlemap'] = get_field('googlemap');
-                if ($brand == true) {
-                    $post_data['brand'] = array_column($brand, 'name');
-                } else {
-                    $post_data['brand'] = [];
-                }
-                if ($item == true) {
-                    $post_data['item'] = array_column($item, 'name');
-                } else {
-                    $post_data['item'] = [];
-                }
-                $post_data['prefecture'] = $prefecture;
-                $my_post['data'][] = $post_data;
-                ++$i;
-            }
+    $i = 0;
+    $tags = get_terms('tags');
+    foreach($tags as $tag) {
+      $args = array(
+        'post_type' => 'news',
+        // 'paged' => get_query_var('page'),
+        // 'order' => 'ASC',
+        'tax_query' => array(
+          array(
+            'taxonomy' => 'tags',
+            'field'    => 'slug',
+            'terms'    => $tag -> slug,
+          ),
+        ),
+        'posts_per_page' => -1,
+      );
+      $WP_post = new WP_Query($args);
+      // $my_posts['total'] = $WP_post -> found_posts;
+      // var_dump($WP_post -> post_count);
+      if ($WP_post -> have_posts()) {
+        while ($WP_post -> have_posts()) {
+          $WP_post->the_post();
+          ++$i;
+          $post_data = [];
+          $post_data['id'] = $i;
+          $post_data['category'] = $tag -> name;
+          $post_data['title'] = get_field('title') ? get_field('title') : '';
+          $post_data['body'] = get_field('body') ? get_field('body') : '';
+          $post_data['thumbnails'] = get_field('thumbnails');
+          $post_data['updatedAt'] = get_the_modified_date('c');
+          $my_posts['data'][] = $post_data;
         }
-        $my_posts[] = $my_post;
+      }
     }
+    return $my_posts;
   }
   add_action('rest_api_init', 'add_rest_endpoint_all_news');
