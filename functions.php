@@ -79,7 +79,7 @@
   }
   function get_all_posts_from_blog() {
     $args = array(
-      'posts_per_page' => $_GET['limit'],
+      'posts_per_page' => $_GET['limit'] == '' ? -1 : $_GET['limit'],
       'post_type' => 'post',
       'post_status' => 'publish',
       'paged' => $_GET['offset']
