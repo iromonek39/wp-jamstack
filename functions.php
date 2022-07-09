@@ -79,13 +79,13 @@
   }
   function get_all_posts_from_blog() {
     $args = array(
-      'posts_per_page' => $_GET['perpage'],
+      'posts_per_page' => $_GET['limit'],
       'post_type' => 'post',
       'post_status' => 'publish',
-      'paged' => $_GET['pagenation']
+      'paged' => $_GET['offset']
     );
     $all_posts = get_posts($args);
-    $result = array();
+    $result['data'] = [];
     foreach($all_posts as $post) {
       $data = array(
         'id' => $post->ID,
@@ -99,8 +99,9 @@
         'category' => get_the_category($post->ID),
         'tag' => get_the_tags($post->ID)
       );
-      array_push($result, $data);
+      array_push($result['data'], $data);
     };
+    $result['total'] = count($result['data']);
     return $result;
   }
   add_action('rest_api_init', 'add_rest_endpoint_all_posts_from_blog');
@@ -257,8 +258,7 @@
         'posts_per_page' => -1,
       );
       $WP_post = new WP_Query($args);
-      // $my_posts['total'] = $WP_post -> found_posts;
-      // var_dump($WP_post -> post_count);
+      var_dump($WP_post);
       if ($WP_post -> have_posts()) {
         while ($WP_post -> have_posts()) {
           $WP_post->the_post();
@@ -274,6 +274,7 @@
         }
       }
     }
+    $my_posts['total'] = count($my_posts['data']);
     return $my_posts;
   }
   add_action('rest_api_init', 'add_rest_endpoint_all_news');
