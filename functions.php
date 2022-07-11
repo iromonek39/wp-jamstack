@@ -1,21 +1,21 @@
 <?php
   //カスタム投稿のカテゴリー：カテゴリー選択ボックスで一つだけしか選択できないようにする。
-  add_action( 'admin_print_footer_scripts', 'select_to_radio_tags' );
+  add_action('admin_print_footer_scripts', 'select_to_radio_tags');
   function select_to_radio_tags() {
       ?>
       <script type="text/javascript">
       jQuery( function( $ ) {
           // 投稿画面
-          $( '#taxonomy-tags input[type=checkbox]' ).each( function() {
-              $( this ).replaceWith( $( this ).clone().attr( 'type', 'radio' ) );
-          } );
+          $('#taxonomy-tags input[type=checkbox]').each(function() {
+              $(this).replaceWith($(this).clone().attr('type', 'radio'));
+          });
 
           // 一覧画面
-          let event_cat_checklist = $( '.tagschecklist input[type=checkbox]' );
-          event_cat_checklist.click( function() {
-            $( this ).closest( '.tagschecklist' ).find( ' input[type=checkbox]' ).not(this).prop( 'checked', false );
-          } );
-      } );
+          let event_cat_checklist = $('.tagschecklist input[type=checkbox]');
+          event_cat_checklist.click(function() {
+            $(this).closest('.tagschecklist').find('input[type=checkbox]').not(this).prop('checked', false);
+          });
+      });
       </script>
       <?php
   }
@@ -78,30 +78,36 @@
     );
   }
   function get_all_posts_from_blog() {
+    $result = [];
     $args = array(
-      'posts_per_page' => $_GET['limit'] == '' ? -1 : $_GET['limit'],
+      'posts_per_page' => (!isset($_GET['limit'])) ? -1 : (int)$_GET['limit'],
       'post_type' => 'post',
       'post_status' => 'publish',
       'paged' => $_GET['offset']
     );
-    $all_posts = get_posts($args);
-    $result['data'] = [];
-    foreach($all_posts as $post) {
-      $data = array(
-        'id' => $post->ID,
-        'thumbnail' => get_the_post_thumbnail_url($post->ID, 'full'),
-        'slug' => $post->post_name,
-        'date' => $post->post_date,
-        'modified' => $post->post_modified,
-        'title' => $post->post_title,
-        'excerpt' => $post->post_excerpt,
-        'content' => $post->post_content,
-        'category' => get_the_category($post->ID),
-        'tag' => get_the_tags($post->ID)
-      );
-      array_push($result['data'], $data);
-    };
-    $result['total'] = count($result['data']);
+    $WP_post = new WP_Query($args);
+    if ($WP_post->have_posts()) {
+      $result['total'] = $WP_post->found_posts;
+      $result['data'] = [];
+      while ($WP_post->have_posts()) {
+        $WP_post->the_post();
+        $post = get_post(get_the_ID());
+        $data = array(
+          'id' => $post->ID,
+          'thumbnail' => get_the_post_thumbnail_url($post->ID, 'full'),
+          'slug' => $post->post_name,
+          'date' => $post->post_date,
+          'modified' => $post->post_modified,
+          'title' => $post->post_title,
+          'excerpt' => $post->post_excerpt,
+          'content' => $post->post_content,
+          'category' => get_the_category($post->ID),
+          'tag' => get_the_tags($post->ID)
+        );
+        $result['data'][] = $data;
+      }
+    }
+    wp_reset_postdata();
     return $result;
   }
   add_action('rest_api_init', 'add_rest_endpoint_all_posts_from_blog');
